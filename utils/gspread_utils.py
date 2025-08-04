@@ -8,10 +8,17 @@ SCOPES = [
     'https://www.googleapis.com/auth/drive'
 ]
 
-CREDS_FILE = 'data/credentials.json'  
+creds_dict = dict(st.secrets["google_service_account"])
+# Crea oggetto credentials
+creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+
+
+#gs_creds_json = st.secrets["secrets"]
+#gs_creds = json.loads(gs_creds_json)
 
 # Autenticazione e client
-creds = Credentials.from_service_account_file(CREDS_FILE, scopes=SCOPES)
+#creds = Credentials.from_service_account_file(CREDS_FILE, scopes=SCOPES)
+#creds = Credentials.from_service_account_file(gs_creds)
 client = gspread.authorize(creds)
 
 def apri_sheet(spreadsheet_name, worksheet_name):

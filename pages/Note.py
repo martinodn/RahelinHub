@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
-import datetime
+import datetime, json
 import gspread
 from google.oauth2.service_account import Credentials
 
 # CONFIGURAZIONE Google Sheets
-GS_CREDENTIALS_FILE = "data/credentials.json"  # metti il tuo file JSON qui
+#GS_CREDENTIALS_FILE = "data/credentials.json"  # metti il tuo file JSON qui
 GS_SPREADSHEET_NAME = "note"  # nome del tuo Google Sheet
 GS_WORKSHEET_NAME = "note"  # nome del foglio interno
 
@@ -21,7 +21,14 @@ COLONNE = ["utente", "titolo", "contenuto", "data"]
 
 @st.cache_resource(ttl=3600)
 def connetti_gs():
-    creds = Credentials.from_service_account_file(GS_CREDENTIALS_FILE, scopes=scopes)
+
+    creds_dict = dict(st.secrets["google_service_account"])
+
+    # Crea oggetto credentials
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+
+    #creds = Credentials.from_service_account_file(GS_CREDENTIALS_FILE, scopes=scopes)
+    
     client = gspread.authorize(creds)
     sheet = client.open(GS_SPREADSHEET_NAME).worksheet(GS_WORKSHEET_NAME)
     return sheet
