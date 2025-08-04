@@ -14,5 +14,4 @@ USERS = {
 }
 
 def login(username, password):
-    #return USERS.get(username) == hash_password(password)
     return USERS.get(username)==hash_password(password)

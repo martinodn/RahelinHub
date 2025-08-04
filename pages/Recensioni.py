@@ -1,182 +1,180 @@
+
 import streamlit as st
 import pandas as pd
 import datetime
-import pydeck as pdk
-from data_utils import salva_csv, carica_csv, elimina_riga_csv, aggiorna_nota, estrai_coordinate
+import plotly.express as px
+import plotly.graph_objects as go
+from utils.gspread_utils import (
+    carica_df_da_sheet,
+    salva_df_su_sheet,
+    aggiorna_recensione,
+    elimina_recensione,
+)
+from utils.data_utils import estrai_coordinate, estrai_nome_ristorante_da_link
 
-FILE_RECENSIONI = "recensioni.csv"
+st.set_page_config(layout="wide")
+
+
+SPREADSHEET_NAME = "recensioni"
+WORKSHEET_NAME = "recensioni"
 
 if not st.session_state.get("logged_in", False):
     st.error("Effettua il login dalla home.")
     st.stop()
 
-st.title("🍽️ Recensioni Ristoranti")
+st.title("🍽️ Vota i ristoranti!")
 
-# Carica tutte le recensioni
-df = carica_csv(FILE_RECENSIONI, ["utente", "ristorante", "recensione", "voto", "link", "lat", "lon", "data"])
+# Carica recensioni da Google Sheets
+df = carica_df_da_sheet(SPREADSHEET_NAME, WORKSHEET_NAME)
+
 if df.empty:
-    st.info("Nessuna recensione presente. Inizia a scriverne una!")
-    df = pd.DataFrame(columns=["utente","ristorante","recensione","voto","link","lat","lon","data"])
+    st.info("Nessuna recensione presente.")
+    df = pd.DataFrame(columns=["utente", "ristorante", "recensione", "voto", "link", "lat", "lon", "data"])
 
-# Tab: Lista e recensioni
-tab_lista, tab_mappa = st.tabs(["📋 Lista ristoranti e recensioni", "🗺️ Mappa ristoranti"])
+# Tabs
+tab_lista, tab_mappa = st.tabs(["📋 Ristoranti", "🗺️ Mappa"])
 
 with tab_lista:
-    # Calcola voto medio per ristorante
-    media_voti = df.groupby("ristorante")["voto"].mean().reset_index().rename(columns={"voto": "voto_medio"})
-    media_voti = media_voti.sort_values("voto_medio", ascending=False)
+    col_left, col_right = st.columns([2, 1])  # sinistra più larga, destra più stretta
 
-    st.subheader("🍴 Ristoranti ordinati per voto medio")
-    for _, row in media_voti.iterrows():
-        st.markdown(f"**{row['ristorante']}** - ⭐ {row['voto_medio']:.2f}")
+    with col_left:
+        media_voti = df.groupby("ristorante")["voto"].mean().reset_index().rename(columns={"voto": "voto_medio"})
+        media_voti = media_voti.sort_values("voto_medio", ascending=False)
 
-    st.markdown("---")
-    st.subheader("📝 Recensioni")
+        st.subheader("🍴 Ristoranti ordinati per voto medio")
+        for _, row in media_voti.iterrows():
+            st.markdown(f"**{row['ristorante']}** – ⭐ {row['voto_medio']:.2f}")
 
-    # Lista recensioni con autore
-    for idx, row in df.sort_values("data", ascending=False).iterrows():
-        with st.expander(f"{row['ristorante']} - ⭐ {row['voto']} (di {row['utente']})"):
-            st.write(row["recensione"])
-            st.caption(f"Data: {row['data']}")
-            # Se link e coordinate validi, mostra link google maps
-            if row.get("link") and pd.notna(row.get("lat")) and pd.notna(row.get("lon")):
-                st.markdown(f"[📍 Google Maps]({row['link']})")
+        st.markdown("---")
+        st.subheader("📝 Recensioni")
+        for idx, row in df.sort_values("data", ascending=False).iterrows():
+            with st.expander(f"{row['ristorante']} – ⭐ {row['voto']} (di {row['utente']})"):
+                st.write(row["recensione"])
+                st.caption(f"Data: {row['data']}")
+                if row.get("link") and pd.notna(row.get("lat")) and pd.notna(row.get("lon")):
+                    st.markdown(f"[📍 Google Maps]({row['link']})")
 
+    with col_right:
+        st.subheader("➕ Scrivi una nuova recensione")
+        ristoranti_esistenti = df["ristorante"].dropna().unique().tolist()
+        ristoranti_esistenti.sort()
+        opzioni = ["🆕 Scrivi un nuovo ristorante"] + ristoranti_esistenti
+
+        scelta = st.selectbox("Scegli o aggiungi un ristorante", opzioni)
+
+        if scelta == "🆕 Scrivi un nuovo ristorante":
+            link = st.text_input("Link Google Maps")
+            lat, lon = estrai_coordinate(link)
+            ristorante = estrai_nome_ristorante_da_link(link)
+            st.markdown(f"📍 Ristorante rilevato: **{ristorante}**")
+        else:
+            ristorante = scelta
+            prima_rec = df[df["ristorante"] == scelta].iloc[0]
+            link = prima_rec["link"]
+            lat, lon = prima_rec["lat"], prima_rec["lon"]
+            st.info("Coordinate e link recuperati automaticamente.")
+
+        recensione = st.text_area("La tua recensione")
+        voto = st.slider("Voto", 1, 10)
+
+        if st.button("Invia recensione"):
+            if not link:
+                st.warning("Inserisci un link valido.")
+            elif not recensione:
+                st.warning("Inserisci la recensione.")
+            else:
+                già_fatto = ((df["utente"] == st.session_state.username) & (df["ristorante"].str.lower() == ristorante.lower())).any()
+                if già_fatto:
+                    st.error("Hai già recensito questo ristorante.")
+                else:
+                    nuova_riga = {
+                        "utente": st.session_state.username,
+                        "ristorante": ristorante,
+                        "recensione": recensione,
+                        "voto": voto,
+                        "link": link,
+                        "lat": lat,
+                        "lon": lon,
+                        "data": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+                    }
+                    df = pd.concat([df, pd.DataFrame([nuova_riga])], ignore_index=True)
+                    salva_df_su_sheet(df, SPREADSHEET_NAME, WORKSHEET_NAME)
+                    st.success("Recensione salvata!")
+                    st.rerun()
 with tab_mappa:
     df_map = df.dropna(subset=["lat", "lon"])
     if df_map.empty:
-        st.info("Nessuna recensione con coordinate per mostrare la mappa.")
+        st.info("Nessuna recensione con coordinate.")
     else:
+        # Raggruppa per ristorante e calcola coordinate e voto medio
         grp = df_map.groupby("ristorante").agg({
             "lat": "mean",
             "lon": "mean",
             "voto": "mean"
         }).reset_index()
 
-        grp["lat"] = pd.to_numeric(grp["lat"])
-        grp["lon"] = pd.to_numeric(grp["lon"])
-        grp["info"] = grp.apply(lambda r: f"🍴 {r['ristorante']}<br>⭐ Voto medio: {r['voto']:.2f}", axis=1)
+        # Hover text personalizzato
+        grp["hover"] = grp["ristorante"] + " – ⭐ " + grp["voto"].round(2).astype(str)
 
-        ICON_URL = "https://upload.wikimedia.org/wikipedia/commons/e/ed/Map_pin_icon.svg"
-
-        grp["icon_data"] = [{
-            "url": ICON_URL,
-            "width": 40,
-            "height": 55,
-            "anchorY": 55
-        }] * len(grp)
-
-        layer = pdk.Layer(
-            "IconLayer",
-            data=grp,
-            get_icon="icon_data",
-            get_size=4,
-            size_scale=10,
-            get_position='[lon, lat]',
-            pickable=True,
-            auto_highlight=True,
-        )
-
-        midpoint = (grp["lat"].mean(), grp["lon"].mean())
-        view_state = pdk.ViewState(
-            latitude=midpoint[0],
-            longitude=midpoint[1],
-            zoom=11,
-            pitch=0,
-        )
-
-        tooltip = {
-            "html": "{info}",
-            "style": {
-                "backgroundColor": "steelblue",
-                "color": "white",
-                "fontSize": "14px",
-                "padding": "10px",
-                "borderRadius": "5px"
-            }
-        }
-
-        st.pydeck_chart(pdk.Deck(
-            map_style="mapbox://styles/mapbox/streets-v11",
-            initial_view_state=view_state,
-            layers=[layer],
-            tooltip=tooltip,
+        # Crea figura Plotly con Scattermap (nuovo)
+        fig = go.Figure(go.Scattermap(
+            lat=grp["lat"],
+            lon=grp["lon"],
+            mode='markers',
+            marker=dict(
+                size=18,
+                color=grp["voto"],
+                colorscale="RdYlGn",
+                cmin=1,
+                cmax=10,
+                colorbar=dict(title="Voto"),
+                opacity=1
+            ),
+            text=grp["hover"],
+            hoverinfo='text'
         ))
 
+        # Layout aggiornato con map invece di mapbox
+        fig.update_layout(
+            map=dict(
+                style="carto-positron",  # o "carto-positron", "stamen-terrain"
+                center=dict(lat=grp["lat"].mean(), lon=grp["lon"].mean()),
+                zoom=10
+            ),
+            margin={"r": 0, "t": 0, "l": 0, "b": 0}
+        )
 
-# ===== Nuova recensione =====
-with st.expander("➕ Scrivi una nuova recensione"):
-    ristoranti_esistenti = df["ristorante"].dropna().unique().tolist()
-    ristoranti_esistenti.sort()
-    ristoranti_opzioni = ["🆕 Scrivi un nuovo ristorante"] + ristoranti_esistenti
-
-    scelta_ristorante = st.selectbox("Scegli un ristorante o scrivine uno nuovo", ristoranti_opzioni)
-
-    if scelta_ristorante == "🆕 Scrivi un nuovo ristorante":
-        ristorante = st.text_input("Nome del ristorante")
-    else:
-        ristorante = scelta_ristorante
-
-    recensione = st.text_area("La tua recensione")
-    voto = st.slider("Voto", 1, 10)
-    maps_link = st.text_input("Link Google Maps (opzionale)")
-
-    if st.button("Invia recensione"):
-        if not ristorante:
-            st.warning("Inserisci il nome del ristorante.")
-        elif not recensione:
-            st.warning("Inserisci la recensione.")
-        else:
-            # Controllo recensione duplicata utente-ristorante
-            already_reviewed = ((df["utente"] == st.session_state.username) & (df["ristorante"].str.lower() == ristorante.lower())).any()
-            if already_reviewed:
-                st.error("Hai già scritto una recensione per questo ristorante.")
-            else:
-                lat, lon = estrai_coordinate(maps_link)
-                salva_csv({
-                    "utente": st.session_state.username,
-                    "ristorante": ristorante,
-                    "recensione": recensione,
-                    "voto": voto,
-                    "link": maps_link,
-                    "lat": lat,
-                    "lon": lon,
-                    "data": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-                }, FILE_RECENSIONI)
-                st.success("Recensione salvata!")
-                st.experimental_rerun()
+        st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
 
 
-# ===== Le recensioni dell'utente loggato per modifica/eliminazione =====
+
+# ===== Modifica/Elimina recensioni utente =====
 user_df = df[df["utente"] == st.session_state.username]
-if user_df.empty:
-    st.info("Non hai ancora scritto recensioni.")
-else:
-    st.subheader("🛠️ Le tue recensioni (modifica o elimina)")
-
+st.write('#')
+if not user_df.empty:
+    st.subheader("🛠️ Le tue recensioni")
     for idx, row in user_df.iterrows():
-        with st.expander(f"{row['ristorante']} - ⭐ {row['voto']}"):
+        with st.expander(f"{row['ristorante']} – ⭐ {row['voto']}"):
             nuovo_ristorante = st.text_input("🍴 Nome ristorante", value=row["ristorante"], key=f"res_{idx}")
             nuova_recensione = st.text_area("📝 Recensione", value=row["recensione"], key=f"rev_{idx}")
             nuovo_voto = st.slider("⭐ Voto", 1, 10, value=int(row["voto"]), key=f"voto_{idx}")
-            nuovo_link = st.text_input("📍 Link Google Maps", value=row.get("link", ""), key=f"link_{idx}")
-            lat, lon = estrai_coordinate(nuovo_link)
+            nuovo_link = row["link"]
+            lat, lon = row["lat"], row["lon"]
 
-            col1, col2 = st.columns([1, 1])
+            col1, col2 = st.columns(2)
             with col1:
-                if st.button("💾 Salva modifiche", key=f"mod_rec_{idx}"):
-                    aggiorna_nota(FILE_RECENSIONI, idx, {
+                if st.button("💾 Salva modifiche", key=f"mod_{idx}"):
+                    aggiorna_recensione(df, idx, {
                         "ristorante": nuovo_ristorante,
                         "recensione": nuova_recensione,
                         "voto": nuovo_voto,
                         "link": nuovo_link,
                         "lat": lat,
                         "lon": lon
-                    })
+                    }, SPREADSHEET_NAME, WORKSHEET_NAME)
                     st.success("Recensione modificata.")
-                    st.experimental_rerun()
+                    st.rerun()
             with col2:
-                if st.button("🗑️ Elimina", key=f"del_rec_{idx}"):
-                    elimina_riga_csv(FILE_RECENSIONI, lambda df: (df.index == idx) & (df["utente"] == st.session_state.username))
+                if st.button("🗑️ Elimina", key=f"del_{idx}"):
+                    df = elimina_recensione(df, idx, SPREADSHEET_NAME, WORKSHEET_NAME)
                     st.success("Recensione eliminata.")
-                    st.experimental_rerun()

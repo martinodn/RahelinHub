@@ -1,5 +1,5 @@
 import streamlit as st
-from utenti import login
+from utils.utenti import login
 st.set_page_config(page_title="App Recensioni", layout="centered")
 st.sidebar.title("🔐 Login")
 
@@ -14,15 +14,15 @@ if not st.session_state.logged_in:
         if login(username, password):
             st.session_state.logged_in = True
             st.session_state.username = username
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.sidebar.error("Credenziali errate")
 else:
-    st.sidebar.success(f"Loggato come: {st.session_state.username}")
+    st.sidebar.success("Loggato come: {}".format(st.session_state.username))
     if st.sidebar.button("Logout"):
         st.session_state.logged_in = False
         st.session_state.username = ""
-        st.experimental_rerun()
+        st.rerun()
 
 st.title("📋 App Personale")
 if st.session_state.logged_in:
