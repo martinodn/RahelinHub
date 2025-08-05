@@ -75,7 +75,7 @@ def estrai_nome_ristorante_da_link(link):
             # Prende tutto dopo /place/ fino al prossimo /
             nome_grezzo = path.split("/place/")[1].split("/")[0]
             nome_pulito = unquote_plus(nome_grezzo).strip()
-            return nome_pulito
+            return nome_pulito.split(",")[0]
     except Exception as e:
         print(f"Errore durante l'estrazione del nome: {e}")
     return "Ristorante sconosciuto"
