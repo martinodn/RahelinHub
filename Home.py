@@ -3,8 +3,7 @@ from utils.utenti import login
 from PIL import Image
 
 
-
-st.set_page_config(page_title="RaheLink", layout="centered")
+st.set_page_config(page_title="RaheLink", layout="wide")
 st.sidebar.title("🔐 Login")
 
 if "logged_in" not in st.session_state:
@@ -28,7 +27,7 @@ else:
         st.session_state.username = ""
         st.rerun()
 
-st.title("📋 Benvenuto su RaheLink!")
+st.title("Benvenuto su RaheLink! 🤗")
 if st.session_state.logged_in:
     st.info("Usa il menu a sinistra per navigare tra le pagine.")
     col1, col2, col3 = st.columns([1,3,1])

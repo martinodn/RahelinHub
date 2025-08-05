@@ -107,9 +107,11 @@ with col_sx:
         st.info("Nessuna nota ancora.")
     else:
         st.subheader("📄 Tutte le note")
-
-        ordine = st.selectbox("Ordina per:", ["data", "utente"], index=0)
-        ordine_crescente = st.checkbox("Ordine crescente", value=False)
+        filter_cols=st.columns(2)
+        with filter_cols[0]:
+            ordine = st.selectbox("Ordina per:", ["data", "utente"], index=0)
+            ordine_crescente = st.checkbox("Ordine crescente", value=False)
+            
         df = df.sort_values(by=ordine, ascending=ordine_crescente)
 
         for idx, row in df.iterrows():

@@ -42,13 +42,20 @@ with tab_lista:
     with col_left:
         media_voti = df.groupby("ristorante")["voto"].mean().reset_index().rename(columns={"voto": "voto_medio"})
         media_voti = media_voti.sort_values("voto_medio", ascending=False)
-
+        
         st.subheader("🍴 Ristoranti per voto medio")
-        for _, row in media_voti.iterrows():
-            st.markdown(f"**{row['ristorante']}** – ⭐ {row['voto_medio']:.2f}")
+        ranking_cols=st.columns(2)
+        with ranking_cols[1]:
+            rank = st.radio("Ordina le recensioni:", ["Top", "Flop"])
+        with ranking_cols[0]:
+            if rank=="Flop":
+                media_voti=media_voti.sort_values("voto_medio", ascending=True)
+            media_voti=media_voti.head(10)
+            for _, row in media_voti.iterrows():
+                st.markdown(f"**{row['ristorante']}** – ⭐ {row['voto_medio']:.2f}")
 
         st.markdown("---")
-        st.subheader("📝 Recensioni")
+        st.subheader("📝 Tutte le recensioni")
         for idx, row in df.sort_values("data", ascending=False).iterrows():
             with st.expander(f"{row['ristorante']} – ⭐ {row['voto']} (di {row['utente']})"):
                 st.write(row["recensione"])
@@ -60,12 +67,12 @@ with tab_lista:
         st.subheader("➕ Nuova recensione")
         ristoranti_esistenti = df["ristorante"].dropna().unique().tolist()
         ristoranti_esistenti.sort()
-        opzioni = ["🆕 Scrivi un nuovo ristorante"] + ristoranti_esistenti
+        opzioni = ["🆕 Nuovo ristorante"] + ristoranti_esistenti
 
-        scelta = st.selectbox("Scegli o aggiungi un ristorante", opzioni)
+        scelta = st.selectbox("Recensisci un nuovo ristorante o scegline uno già presente:", opzioni)
 
-        if scelta == "🆕 Scrivi un nuovo ristorante":
-            link = st.text_input("Link Google Maps (formato browser)")
+        if scelta == "🆕 Nuovo ristorante":
+            link = st.text_input("Link Google Maps (formato browser):")
             lat, lon = estrai_coordinate_da_link(link)
             ristorante = estrai_nome_ristorante_da_link(link)
             st.markdown(f"📍 Ristorante rilevato: **{ristorante}**")
@@ -77,7 +84,7 @@ with tab_lista:
             st.info("Coordinate e link recuperati automaticamente.")
 
         
-        recensione = st.text_area("La tua recensione")
+        recensione = st.text_area("La tua recensione:")
         voto = st.slider("Voto", 1, 10)
 
         if st.button("Invia recensione"):
