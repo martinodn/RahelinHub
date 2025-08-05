@@ -9,7 +9,7 @@ from utils.gspread_utils import (
     salva_df_su_sheet,
     aggiorna_recensione,
     elimina_recensione,
-    estrai_coordinate,
+    estrai_coordinate_da_link,
     estrai_nome_ristorante_da_link
 )
 
@@ -66,7 +66,7 @@ with tab_lista:
 
         if scelta == "🆕 Scrivi un nuovo ristorante":
             link = st.text_input("Link Google Maps")
-            lat, lon = estrai_coordinate(link)
+            lat, lon = estrai_coordinate_da_link(link)
             ristorante = estrai_nome_ristorante_da_link(link)
             st.markdown(f"📍 Ristorante rilevato: **{ristorante}**")
         else:
@@ -76,6 +76,7 @@ with tab_lista:
             lat, lon = prima_rec["lat"], prima_rec["lon"]
             st.info("Coordinate e link recuperati automaticamente.")
 
+        
         recensione = st.text_area("La tua recensione")
         voto = st.slider("Voto", 1, 10)
 
