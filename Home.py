@@ -33,11 +33,11 @@ if st.session_state.logged_in:
     st.info("Usa il menu a sinistra per navigare tra le pagine.")
     col1, col2, col3 = st.columns([1,3,1])
     with col2:
-        image = Image.open("data/rahel.png")
+        image = Image.open("data/Rahel.PNG")
         st.image(image, use_container_width=True)
 else:
     st.warning("Effettua il login per accedere.")
     col1, col2, col3 = st.columns([1,3,1])
     with col2:
-        image = Image.open("data/rahel.png")
+        image = Image.open("data/Rahel.PNG")
         st.image(image, use_container_width=True)
