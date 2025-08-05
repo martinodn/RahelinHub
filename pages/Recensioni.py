@@ -65,7 +65,7 @@ with tab_lista:
         scelta = st.selectbox("Scegli o aggiungi un ristorante", opzioni)
 
         if scelta == "🆕 Scrivi un nuovo ristorante":
-            link = st.text_input("Link Google Maps")
+            link = st.text_input("Link Google Maps (formato browser)")
             lat, lon = estrai_coordinate_da_link(link)
             ristorante = estrai_nome_ristorante_da_link(link)
             st.markdown(f"📍 Ristorante rilevato: **{ristorante}**")
