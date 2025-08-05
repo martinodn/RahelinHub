@@ -1,6 +1,10 @@
 import streamlit as st
 from utils.utenti import login
-st.set_page_config(page_title="App Recensioni", layout="centered")
+from PIL import Image
+
+
+
+st.set_page_config(page_title="RaheLink", layout="centered")
 st.sidebar.title("🔐 Login")
 
 if "logged_in" not in st.session_state:
@@ -24,8 +28,16 @@ else:
         st.session_state.username = ""
         st.rerun()
 
-st.title("📋 App Personale")
+st.title("📋 Benvenuto su RaheLink!")
 if st.session_state.logged_in:
     st.info("Usa il menu a sinistra per navigare tra le pagine.")
+    col1, col2, col3 = st.columns([1,3,1])
+    with col2:
+        image = Image.open("data/rahel.png")
+        st.image(image, use_container_width=True)
 else:
     st.warning("Effettua il login per accedere.")
+    col1, col2, col3 = st.columns([1,3,1])
+    with col2:
+        image = Image.open("data/rahel.png")
+        st.image(image, use_container_width=True)
