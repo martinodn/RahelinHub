@@ -9,8 +9,10 @@ from utils.gspread_utils import (
     salva_df_su_sheet,
     aggiorna_recensione,
     elimina_recensione,
+    estrai_coordinate,
+    estrai_nome_ristorante_da_link
 )
-from utils.data_utils import estrai_coordinate, estrai_nome_ristorante_da_link
+
 
 st.set_page_config(layout="wide")
 
@@ -41,7 +43,7 @@ with tab_lista:
         media_voti = df.groupby("ristorante")["voto"].mean().reset_index().rename(columns={"voto": "voto_medio"})
         media_voti = media_voti.sort_values("voto_medio", ascending=False)
 
-        st.subheader("🍴 Ristoranti ordinati per voto medio")
+        st.subheader("🍴 Ristoranti per voto medio")
         for _, row in media_voti.iterrows():
             st.markdown(f"**{row['ristorante']}** – ⭐ {row['voto_medio']:.2f}")
 
@@ -55,7 +57,7 @@ with tab_lista:
                     st.markdown(f"[📍 Google Maps]({row['link']})")
 
     with col_right:
-        st.subheader("➕ Scrivi una nuova recensione")
+        st.subheader("➕ Nuova recensione")
         ristoranti_esistenti = df["ristorante"].dropna().unique().tolist()
         ristoranti_esistenti.sort()
         opzioni = ["🆕 Scrivi un nuovo ristorante"] + ristoranti_esistenti

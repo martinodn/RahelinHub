@@ -1,7 +1,8 @@
-import gspread
+import gspread, re 
 from google.oauth2.service_account import Credentials
 import pandas as pd
 import streamlit as st
+from urllib.parse import urlparse, unquote_plus
 
 SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -47,3 +48,33 @@ def elimina_recensione(df, idx, spreadsheet_name, worksheet_name):
     df = df.drop(idx).reset_index(drop=True)
     salva_df_su_sheet(df, spreadsheet_name, worksheet_name)
     return df
+
+def estrai_coordinate(link):
+    # Cerca coordinate da !3dLAT!4dLON
+    match = re.search(r'!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)', link)
+    if match:
+        lat, lon = float(match.group(1)), float(match.group(2))
+        return lat, lon
+
+    # Fallback: usa le coordinate centrate nella vista (meno affidabili)
+    match = re.search(r'@(-?\d+\.\d+),(-?\d+\.\d+)', link)
+    if match:
+        lat, lon = float(match.group(1)), float(match.group(2))
+        return lat, lon
+
+    return None, None
+
+def estrai_nome_ristorante_da_link(link):
+    """
+    Estrae un nome leggibile del ristorante da un link di Google Maps.
+    """
+    try:
+        path = urlparse(link).path
+        if "/place/" in path:
+            # Prende tutto dopo /place/ fino al prossimo /
+            nome_grezzo = path.split("/place/")[1].split("/")[0]
+            nome_pulito = unquote_plus(nome_grezzo).strip()
+            return nome_pulito
+    except Exception as e:
+        print(f"Errore durante l'estrazione del nome: {e}")
+    return "Ristorante sconosciuto"
