@@ -3,6 +3,7 @@ from google.oauth2.service_account import Credentials
 import pandas as pd
 import streamlit as st
 from urllib.parse import urlparse, unquote_plus
+import requests
 
 SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -49,32 +50,90 @@ def elimina_recensione(df, idx, spreadsheet_name, worksheet_name):
     salva_df_su_sheet(df, spreadsheet_name, worksheet_name)
     return df
 
-def estrai_coordinate(link):
-    # Cerca coordinate da !3dLAT!4dLON
-    match = re.search(r'!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)', link)
-    if match:
-        lat, lon = float(match.group(1)), float(match.group(2))
-        return lat, lon
+#def estrai_coordinate(link):
+#    # Cerca coordinate da !3dLAT!4dLON
+#    match = re.search(r'!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)', link)
+#    if match:
+#        lat, lon = float(match.group(1)), float(match.group(2))
+#        return lat, lon
+#
+#    # Fallback: usa le coordinate centrate nella vista (meno affidabili)
+#    match = re.search(r'@(-?\d+\.\d+),(-?\d+\.\d+)', link)
+#    if match:
+#        lat, lon = float(match.group(1)), float(match.group(2))
+#        return lat, lon
+#
+#    return None, None
 
-    # Fallback: usa le coordinate centrate nella vista (meno affidabili)
-    match = re.search(r'@(-?\d+\.\d+),(-?\d+\.\d+)', link)
-    if match:
-        lat, lon = float(match.group(1)), float(match.group(2))
-        return lat, lon
+def estrai_coordinate_da_link(link):
+    """
+    Estrae le coordinate (latitudine, longitudine) da un link Google Maps.
+    Supporta sia link corto (maps.app.goo.gl) che link lungo con @lat,lon.
+    """
+    def estrai_coordinate(url):
+        #match = re.search(r'@(-?\d+\.\d+),(-?\d+\.\d+)', url)
+        match = re.search(r'!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)', link)
+        if match:
+            lat, lon = float(match.group(1)), float(match.group(2))
+            return lat, lon
+        return None, None
+
+    # Segui redirect se è un link corto
+    if "maps.app.goo.gl" in link:
+        try:
+            resp = requests.get(link, allow_redirects=True, timeout=10)
+            return estrai_coordinate(resp.url)
+        except Exception as e:
+            print(f"[DEBUG - coordinate] Errore nel redirect: {e}")
+
+    # Se è un link lungo, prova direttamente
+    if "google.com/maps" in link:
+        return estrai_coordinate(link)
 
     return None, None
 
+
+#def estrai_nome_ristorante_da_link(link):
+#    """
+#    Estrae un nome leggibile del ristorante da un link di Google Maps.
+#    """
+#    try:
+#        path = urlparse(link).path
+#        if "/place/" in path:
+#            # Prende tutto dopo /place/ fino al prossimo /
+#            nome_grezzo = path.split("/place/")[1].split("/")[0]
+#            nome_pulito = unquote_plus(nome_grezzo).strip()
+#            return nome_pulito
+#    except Exception as e:
+#        print(f"Errore durante l'estrazione del nome: {e}")
+#    return "Ristorante sconosciuto"
+#
 def estrai_nome_ristorante_da_link(link):
     """
-    Estrae un nome leggibile del ristorante da un link di Google Maps.
+    Estrae un nome leggibile del ristorante da un link Google Maps.
+    Supporta sia link corto (maps.app.goo.gl) che link lungo (/place/...).
     """
-    try:
-        path = urlparse(link).path
-        if "/place/" in path:
-            # Prende tutto dopo /place/ fino al prossimo /
-            nome_grezzo = path.split("/place/")[1].split("/")[0]
-            nome_pulito = unquote_plus(nome_grezzo).strip()
-            return nome_pulito
-    except Exception as e:
-        print(f"Errore durante l'estrazione del nome: {e}")
+    def estrai_nome(url):
+        try:
+            if "/place/" in url:
+                path = urlparse(url).path
+                nome = path.split("/place/")[1].split("/")[0]
+                nome = unquote(nome.replace("+", " ")).strip()
+                return nome
+        except Exception:
+            pass
+        return "Ristorante sconosciuto"
+
+    # Segui il redirect se è un link corto
+    if "maps.app.goo.gl" in link:
+        try:
+            resp = requests.get(link, allow_redirects=True, timeout=10)
+            return estrai_nome(resp.url)
+        except Exception as e:
+            print(f"[DEBUG - nome] Errore nel redirect: {e}")
+
+    # Se è un link lungo, prova direttamente
+    if "google.com/maps" in link:
+        return estrai_nome(link)
+
     return "Ristorante sconosciuto"
