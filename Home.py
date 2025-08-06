@@ -15,12 +15,15 @@ if not st.session_state.logged_in:
     password = st.sidebar.text_input("Password", type="password")
 
     if st.sidebar.button("Login"):
-        if login(username, password):
-            st.session_state.logged_in = True
-            st.session_state.username = username
-            st.rerun()
-        else:
-            st.sidebar.error("Credenziali errate")
+        if username not in st.secrets["password"]:
+            st.warning("Inserire username corretto.")
+        else: 
+            if login(username, password):
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                st.rerun()
+            else:
+                st.sidebar.error("Credenziali errate")
 else:
     st.sidebar.success("Loggato come: {}".format(st.session_state.username))
     if st.sidebar.button("Logout"):
