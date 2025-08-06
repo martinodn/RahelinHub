@@ -65,15 +65,17 @@ def estrai_coordinate_da_link(link):
     # Cerca coordinate da !3dLAT!4dLON
     match = re.search(r'!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)', link)
     if match:
+        st.write("match trovato")
         lat, lon = float(match.group(1)), float(match.group(2))
         return lat, lon
 
     # Fallback: usa le coordinate centrate nella vista (meno affidabili)
     match = re.search(r'@(-?\d+\.\d+),(-?\d+\.\d+)', link)
     if match:
+        st.write("match secondo grado")
         lat, lon = float(match.group(1)), float(match.group(2))
         return lat, lon
-
+    st.write("nessun match trovato")
     return None, None
 
 def estrai_nome_ristorante_da_link(link):
