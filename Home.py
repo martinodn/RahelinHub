@@ -14,6 +14,8 @@ if not st.session_state.logged_in:
     username = st.sidebar.text_input("Username")
     password = st.sidebar.text_input("Password", type="password")
     st.write(username, password)
+    if username in st.secrets["password"]:
+        st.write("yes")
     if st.sidebar.button("Login"):
         if login(username, password):
             st.session_state.logged_in = True
