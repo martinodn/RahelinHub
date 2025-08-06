@@ -13,16 +13,17 @@ if "logged_in" not in st.session_state:
 if not st.session_state.logged_in:
     username = st.sidebar.text_input("Username")
     password = st.sidebar.text_input("Password", type="password")
-    st.write(username, password)
-    if username in st.secrets["password"]:
-        st.write("yes")
-    if st.sidebar.button("Login"):
-        if login(username, password):
-            st.session_state.logged_in = True
-            st.session_state.username = username
-            st.rerun()
-        else:
-            st.sidebar.error("Credenziali errate")
+
+    if username not in st.secrets["password"]:
+        st.warning("Nome utente non esistente")
+    else:
+        if st.sidebar.button("Login"):
+            if login(username, password):
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                st.rerun()
+            else:
+                st.sidebar.error("Credenziali errate")
 else:
     st.sidebar.success("Loggato come: {}".format(st.session_state.username))
     if st.sidebar.button("Logout"):
