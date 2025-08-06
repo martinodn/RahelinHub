@@ -74,7 +74,6 @@ with tab_lista:
         if scelta == "🆕 Nuovo ristorante":
             link = st.text_input("Link Google Maps (formato browser):")
             lat, lon = estrai_coordinate_da_link(link)
-            st.write(lat,lon)
             ristorante = estrai_nome_ristorante_da_link(link)
             st.markdown(f"📍 Ristorante rilevato: **{ristorante}**")
         else:
