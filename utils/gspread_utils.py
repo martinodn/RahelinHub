@@ -33,11 +33,22 @@ def carica_df_da_sheet(spreadsheet_name, worksheet_name):
     dati = worksheet.get_all_records()
     return pd.DataFrame(dati)
 
+#def salva_df_su_sheet(df, spreadsheet_name, worksheet_name):
+    #worksheet = apri_sheet(spreadsheet_name, worksheet_name)
+    #worksheet.clear()
+    #worksheet.update([df.columns.values.tolist()] + df.values.tolist())
+
 def salva_df_su_sheet(df, spreadsheet_name, worksheet_name):
     worksheet = apri_sheet(spreadsheet_name, worksheet_name)
-    worksheet.clear()
-    worksheet.update([df.columns.values.tolist()] + df.values.tolist())
-
+    new_data = [df.columns.values.tolist()] + df.values.tolist()
+    
+    try:
+        # Tenta di aggiornare subito, senza cancellare prima
+        worksheet.update(new_data)
+    except Exception as e:
+        print("❌ Errore durante l'update:", e)
+        # Se vuoi, loggalo o notifica via email/Slack
+        
 def aggiorna_recensione(df, idx, nuova_riga, spreadsheet_name, worksheet_name):
     # Modifica la riga con indice idx
     for col, val in nuova_riga.items():
