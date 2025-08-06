@@ -113,6 +113,7 @@ with tab_lista:
                     st.rerun()
 with tab_mappa:
     df_map = df.dropna(subset=["lat", "lon"])
+    st.write(df_map)
     if df_map.empty:
         st.info("Nessuna recensione con coordinate.")
     else:
