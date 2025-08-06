@@ -15,6 +15,7 @@ if not st.session_state.logged_in:
     password = st.sidebar.text_input("Password", type="password")
 
     if st.sidebar.button("Login"):
+        st.write(st.secrets["password"])
         if username not in st.secrets["password"]:
             st.warning("Inserire username corretto.")
         else: 
