@@ -108,10 +108,13 @@ with tab_lista:
                         "lon": lon,
                         "data": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
                     }
-                    df = pd.concat([df, pd.DataFrame([nuova_riga])], ignore_index=True)
-                    salva_df_su_sheet(df, SPREADSHEET_NAME, WORKSHEET_NAME)
-                    st.success("Recensione salvata!")
-                    st.rerun()
+                    if (lat is None) | (lon is None):
+                        st.warning("Impossibile ottenere le coordinate.")
+                    else:
+                        df = pd.concat([df, pd.DataFrame([nuova_riga])], ignore_index=True)
+                        salva_df_su_sheet(df, SPREADSHEET_NAME, WORKSHEET_NAME)
+                        st.success("Recensione salvata!")
+                        st.rerun()
 with tab_mappa:
     df_map = df.dropna(subset=["lat", "lon"])
     if df_map.empty:
