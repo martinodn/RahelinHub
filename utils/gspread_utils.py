@@ -14,13 +14,6 @@ creds_dict = dict(st.secrets["google_service_account"])
 # Crea oggetto credentials
 creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
 
-
-#gs_creds_json = st.secrets["secrets"]
-#gs_creds = json.loads(gs_creds_json)
-
-# Autenticazione e client
-#creds = Credentials.from_service_account_file(CREDS_FILE, scopes=SCOPES)
-#creds = Credentials.from_service_account_file(gs_creds)
 client = gspread.authorize(creds)
 
 def apri_sheet(spreadsheet_name, worksheet_name):
@@ -43,7 +36,7 @@ def salva_df_su_sheet(df, spreadsheet_name, worksheet_name):
         # Tenta di aggiornare subito, senza cancellare prima
         worksheet.update(new_data)
     except Exception as e:
-        print("❌ Errore durante l'update:", e)
+        st.error("❌ Errore durante l'update:", e)
         # Se vuoi, loggalo o notifica via email/Slack
         
 def aggiorna_recensione(df, idx, nuova_riga, spreadsheet_name, worksheet_name):
