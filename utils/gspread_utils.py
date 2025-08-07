@@ -31,12 +31,9 @@ def apri_sheet(spreadsheet_name, worksheet_name):
 def carica_df_da_sheet(spreadsheet_name, worksheet_name):
     worksheet = apri_sheet(spreadsheet_name, worksheet_name)
     dati = worksheet.get_all_records()
+    if not dati:
+        return pd.DataFrame(columns=["utente","ristorante", "recensione", "voto", "link", "lat", "lon", "data"])
     return pd.DataFrame(dati)
-
-#def salva_df_su_sheet(df, spreadsheet_name, worksheet_name):
-    #worksheet = apri_sheet(spreadsheet_name, worksheet_name)
-    #worksheet.clear()
-    #worksheet.update([df.columns.values.tolist()] + df.values.tolist())
 
 def salva_df_su_sheet(df, spreadsheet_name, worksheet_name):
     worksheet = apri_sheet(spreadsheet_name, worksheet_name)
