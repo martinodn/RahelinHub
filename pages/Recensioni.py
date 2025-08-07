@@ -107,7 +107,9 @@ with tab_lista:
                         "lon": lon,
                         "data": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
                     }
-                    if (lat is None) | (lon is None):
+                    if (ristorante=="Ristorante sconosciuto"): 
+                        st.error("Impossibile ottenere il nome del ristorante.")
+                    elif (lat is None) | (lon is None):
                         st.warning("Impossibile ottenere le coordinate.")
                     else:
                         df = pd.concat([df, pd.DataFrame([nuova_riga])], ignore_index=True)
