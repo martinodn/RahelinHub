@@ -72,7 +72,7 @@ with tab_lista:
         scelta = st.selectbox("Recensisci un nuovo ristorante o scegline uno già presente:", opzioni)
 
         if scelta == "🆕 Nuovo ristorante":
-            link = st.text_input("Link Google Maps (formato browser):")
+            link = st.text_input("Link Google Maps (formato browser):", key="new_link")
             lat, lon = estrai_coordinate_da_link(link)
             ristorante = estrai_nome_ristorante_da_link(link)
             st.markdown(f"📍 Ristorante rilevato: **{ristorante}**")
@@ -84,8 +84,8 @@ with tab_lista:
             st.info("Coordinate e link recuperati automaticamente.")
 
         
-        recensione = st.text_area("La tua recensione:")
-        voto = st.slider("Voto", 1, 10)
+        recensione = st.text_area("La tua recensione:", key="new_review")
+        voto = st.slider("Voto", 1, 10, key="new rating"))
 
         if st.button("Invia recensione"):
             if not link:
@@ -115,6 +115,10 @@ with tab_lista:
                         df = pd.concat([df, pd.DataFrame([nuova_riga])], ignore_index=True)
                         salva_df_su_sheet(df, SPREADSHEET_NAME, WORKSHEET_NAME)
                         st.success("Recensione salvata!")
+                        # Reset dei campi
+                        st.session_state[] = ""
+                        st.session_state["new_review"] = ""
+                        st.session_state["new_rating"] = 1
                         st.rerun()
 with tab_mappa:
     df_map = df.dropna(subset=["lat", "lon"])
