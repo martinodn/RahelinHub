@@ -116,7 +116,7 @@ with tab_lista:
                         salva_df_su_sheet(df, SPREADSHEET_NAME, WORKSHEET_NAME)
                         st.success("Recensione salvata!")
                         st.rerun()
-"""with tab_mappa:
+with tab_mappa:
     df_map = df.dropna(subset=["lat", "lon"])
     if df_map.empty:
         st.info("Nessuna recensione con coordinate.")
@@ -153,48 +153,6 @@ with tab_lista:
         fig.update_layout(
             map=dict(
                 style="carto-positron",  # o "carto-positron", "stamen-terrain"
-                center=dict(lat=grp["lat"].mean(), lon=grp["lon"].mean()),
-                zoom=10
-            ),
-            margin={"r": 0, "t": 0, "l": 0, "b": 0}
-        )
-
-        st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
-"""
-with tab_mappa:
-    df_map = df.dropna(subset=["lat", "lon"])
-    if df_map.empty:
-        st.info("Nessuna recensione con coordinate.")
-    else:
-        grp = df_map.groupby("ristorante").agg({
-            "lat": "mean",
-            "lon": "mean",
-            "voto": "mean"
-        }).reset_index()
-
-        grp["hover"] = grp["ristorante"] + " – ⭐ " + grp["voto"].round(2).astype(str)
-
-        fig = go.Figure(go.Scattermapbox(
-            lat=grp["lat"],
-            lon=grp["lon"],
-            mode='markers',
-            marker=go.scattermapbox.Marker(
-                size=28,
-                symbol="marker",  # puoi anche provare "restaurant"
-                color=grp["voto"],
-                colorscale="RdYlGn",
-                cmin=1,
-                cmax=10,
-                colorbar=dict(title="Voto"),
-                opacity=1
-            ),
-            text=grp["hover"],
-            hoverinfo='text'
-        ))
-
-        fig.update_layout(
-            mapbox=dict(
-                style="carto-positron",
                 center=dict(lat=grp["lat"].mean(), lon=grp["lon"].mean()),
                 zoom=10
             ),
