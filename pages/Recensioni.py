@@ -16,16 +16,14 @@ from utils.gspread_utils import (
 st.set_page_config(layout="wide")
 
 
-SPREADSHEET_NAME = "recensioni"
-WORKSHEET_NAME = "recensioni"
-
 if not st.session_state.get("logged_in", False):
     st.error("Effettua il login dalla home.")
     st.stop()
 
 st.title("🍽️ Vota i ristoranti!")
 
-# Carica recensioni da Google Sheets
+SPREADSHEET_NAME = "recensioni"
+WORKSHEET_NAME = "recensioni"
 df = carica_df_da_sheet(SPREADSHEET_NAME, WORKSHEET_NAME)
 
 if df.empty:
@@ -61,30 +59,40 @@ with tab_lista:
                 st.caption(f"Data: {row['data']}")
                 if row.get("link") and pd.notna(row.get("lat")) and pd.notna(row.get("lon")):
                     st.markdown(f"[📍 Google Maps]({row['link']})")
-
     with col_right:
         st.subheader("➕ Nuova recensione")
         ristoranti_esistenti = df["ristorante"].dropna().unique().tolist()
         ristoranti_esistenti.sort()
         opzioni = ["🆕 Nuovo ristorante"] + ristoranti_esistenti
 
+        # 🧼 Pulizia del form (da fare prima di visualizzare i widget)
+        if st.session_state.get("clear_form", False):
+            st.session_state["nuovo_link"] = ""
+            st.session_state["nuova_recensione"] = ""
+            st.session_state["nuovo_voto"] = 5
+            del st.session_state["clear_form"]
+
         scelta = st.selectbox("Recensisci un nuovo ristorante o scegline uno già presente:", opzioni)
 
+        lat, lon, link, ristorante = None, None, "", ""
+
         if scelta == "🆕 Nuovo ristorante":
-            link = st.text_input("Link Google Maps (formato browser):")
-            lat, lon = estrai_coordinate_da_link(link)
-            ristorante = estrai_nome_ristorante_da_link(link)
-            st.markdown(f"📍 Ristorante rilevato: **{ristorante}**")
+            link = st.text_input("Link Google Maps (formato browser):", key="nuovo_link")
+            if link:
+                lat, lon = estrai_coordinate_da_link(link)
+                ristorante = estrai_nome_ristorante_da_link(link)
+                if ristorante and ristorante != "Ristorante sconosciuto":
+                    st.markdown(f"📍 Ristorante rilevato: **{ristorante}**")
         else:
             ristorante = scelta
             prima_rec = df[df["ristorante"] == scelta].iloc[0]
             link = prima_rec["link"]
             lat, lon = prima_rec["lat"], prima_rec["lon"]
+            st.session_state["nuovo_link"] = link
             st.info("Coordinate e link recuperati automaticamente.")
 
-        
-        recensione = st.text_area("La tua recensione:")
-        voto = st.slider("Voto", 1, 10)
+        recensione = st.text_area("La tua recensione:", key="nuova_recensione")
+        voto = st.slider("Voto", 1, 10, key="nuovo_voto")
 
         if st.button("Invia recensione"):
             if not link:
@@ -106,15 +114,19 @@ with tab_lista:
                         "lon": lon,
                         "data": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
                     }
-                    if (ristorante=="Ristorante sconosciuto"): 
+                    if ristorante == "Ristorante sconosciuto":
                         st.error("Impossibile ottenere il nome del ristorante.")
-                    elif (lat is None) | (lon is None):
+                    elif (lat is None) or (lon is None):
                         st.warning("Impossibile ottenere le coordinate.")
                     else:
                         df = pd.concat([df, pd.DataFrame([nuova_riga])], ignore_index=True)
                         salva_df_su_sheet(df, SPREADSHEET_NAME, WORKSHEET_NAME)
                         st.success("Recensione salvata!")
+
+                        st.session_state["clear_form"] = True
                         st.rerun()
+
+
 with tab_mappa:
     df_map = df.dropna(subset=["lat", "lon"])
     if df_map.empty:
@@ -152,10 +164,12 @@ with tab_mappa:
         fig.update_layout(
             map=dict(
                 style="carto-positron",  # o "carto-positron", "stamen-terrain"
-                center=dict(lat=grp["lat"].mean(), lon=grp["lon"].mean()),
-                zoom=10
+                #center=dict(lat=grp["lat"].mean(), lon=grp["lon"].mean()),
+                center=dict(lat=41.9559971, lon=12.5492583),
+                zoom=11
             ),
-            margin={"r": 0, "t": 0, "l": 0, "b": 0}
+            margin={"r": 0, "t": 0, "l": 0, "b": 0},
+            height=700
         )
 
         st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
