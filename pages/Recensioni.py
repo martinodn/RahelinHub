@@ -169,7 +169,7 @@ with tab_mappa:
                 zoom=11
             ),
             margin={"r": 0, "t": 0, "l": 0, "b": 0},
-            height=700
+            height=550
         )
 
         st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
