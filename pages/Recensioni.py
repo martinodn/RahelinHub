@@ -38,32 +38,39 @@ with tab_lista:
     col_left, col_right = st.columns([2, 1])  # sinistra più larga, destra più stretta
 
     with col_left:
-        media_voti = df.groupby("ristorante")["voto"].mean().reset_index().rename(columns={"voto": "voto_medio"})
-        media_voti = media_voti.sort_values("voto_medio", ascending=False)
-        
         st.subheader("🍴 Ristoranti per voto medio")
-        ranking_cols=st.columns(2)
+
+        # Campo di ricerca testuale
+        filtro_nome = st.text_input("🔍 Cerca ristorante per nome")
+
+        # Calcolo media voti per ristorante
+        media_voti = df.groupby("ristorante")["voto"].mean().reset_index().rename(columns={"voto": "voto_medio"})
+
+        # Applica filtro per nome se presente
+        if filtro_nome:
+            media_voti = media_voti[media_voti["ristorante"].str.contains(filtro_nome, case=False, na=False)]
+
+        ranking_cols = st.columns(2)
+        
         with ranking_cols[1]:
-            rank = st.radio("Ordina le recensioni:", ["Top", "Flop"])
+            rank = st.radio("Ordina le recensioni:", ["Top 10", "Flop 10"])
+
         with ranking_cols[0]:
-            if rank=="Flop":
-                media_voti=media_voti.sort_values("voto_medio", ascending=True)
-            media_voti=media_voti.head(10)
+            # Ordina in base alla selezione
+            if rank == "Flop 10":
+                media_voti = media_voti.sort_values("voto_medio", ascending=True)
+            else:
+                media_voti = media_voti.sort_values("voto_medio", ascending=False)
+
+            # Mostra solo i primi 10 risultati
+            media_voti = media_voti.head(10)
+
+            # Visualizza risultati
             for _, row in media_voti.iterrows():
                 st.markdown(f"**{row['ristorante']}** – ⭐ {row['voto_medio']:.2f}")
 
-        #st.markdown("---")
-        #st.subheader("📝 Tutte le recensioni")
-        #
-        #for idx, row in df.sort_values("data", ascending=False).iterrows():
-        #    with st.expander(f"{row['ristorante']} – ⭐ {row['voto']} (di {row['utente']})"):
-        #        st.write(row["recensione"])
-        #        st.caption(f"Data: {row['data']}")
-        #        if row.get("link") and pd.notna(row.get("lat")) and pd.notna(row.get("lon")):
-        #            st.markdown(f"[📍 Google Maps]({row['link']})")
+                
     st.subheader("📝 Tutte le recensioni")
-
-
     col1, col2, col3 = st.columns(3)
 
     with col1:
