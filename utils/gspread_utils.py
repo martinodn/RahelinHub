@@ -18,6 +18,19 @@ creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
 
 client = gspread.authorize(creds)
 
+# === SALVATAGGIO NUOVA NOTA ===
+def salva_nota():
+    if st.session_state["nuovo_titolo"] and st.session_state["nuovo_contenuto"]:
+        salva_gs({
+            "utente": st.session_state.username,
+            "titolo": st.session_state["nuovo_titolo"],
+            "contenuto": st.session_state["nuovo_contenuto"],
+            "data": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+        })
+        st.session_state["nota_salvata"] = True
+    else:
+        st.warning("Compila titolo e contenuto.")
+        
 def apri_sheet(spreadsheet_name, worksheet_name):
     sh = client.open(spreadsheet_name)
     worksheet = sh.worksheet(worksheet_name)

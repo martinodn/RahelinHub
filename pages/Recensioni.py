@@ -52,14 +52,59 @@ with tab_lista:
             for _, row in media_voti.iterrows():
                 st.markdown(f"**{row['ristorante']}** – ⭐ {row['voto_medio']:.2f}")
 
-        st.markdown("---")
-        st.subheader("📝 Tutte le recensioni")
-        for idx, row in df.sort_values("data", ascending=False).iterrows():
+        #st.markdown("---")
+        #st.subheader("📝 Tutte le recensioni")
+        #
+        #for idx, row in df.sort_values("data", ascending=False).iterrows():
+        #    with st.expander(f"{row['ristorante']} – ⭐ {row['voto']} (di {row['utente']})"):
+        #        st.write(row["recensione"])
+        #        st.caption(f"Data: {row['data']}")
+        #        if row.get("link") and pd.notna(row.get("lat")) and pd.notna(row.get("lon")):
+        #            st.markdown(f"[📍 Google Maps]({row['link']})")
+    st.subheader("📝 Tutte le recensioni")
+
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        filtro_ristorante = st.text_input("Filtra per ristorante (testo)")
+    with col2:
+        utenti = ["Tutti"] + sorted(df["utente"].dropna().unique().tolist())
+        filtro_utente = st.selectbox("Filtra per utente", utenti)
+    with col3:
+        voto_minimo = st.slider("Voto minimo", 1, 10, 1)
+
+    # Applica i filtri
+    df_filtrato = df.copy()
+
+    if filtro_ristorante.strip():
+        df_filtrato = df_filtrato[
+            df_filtrato["ristorante"].str.contains(filtro_ristorante, case=False, na=False)
+        ]
+
+    if filtro_utente != "Tutti":
+        df_filtrato = df_filtrato[df_filtrato["utente"] == filtro_utente]
+
+    df_filtrato = df_filtrato[df_filtrato["voto"] >= voto_minimo]
+
+    # sort by most recents
+    df_filtrato=df_filtrato.sort_values('data',ascending=False)
+    
+    if (filtro_ristorante=="") & (filtro_utente == "Tutti") & (voto_minimo==1):
+        df_filtrato=df_filtrato.iloc[:10,:]
+        st.info('Visualizzazione limitata alle 10 recensioni più recenti. Utilizzare i filtri per cercare le recensioni.')
+    
+    if df_filtrato.empty:
+        st.warning("Nessuna recensione trovata con i filtri selezionati.")
+    else:
+        for idx, row in df_filtrato.sort_values("data", ascending=False).iterrows():
             with st.expander(f"{row['ristorante']} – ⭐ {row['voto']} (di {row['utente']})"):
                 st.write(row["recensione"])
                 st.caption(f"Data: {row['data']}")
                 if row.get("link") and pd.notna(row.get("lat")) and pd.notna(row.get("lon")):
                     st.markdown(f"[📍 Google Maps]({row['link']})")
+
+
     with col_right:
         st.subheader("➕ Nuova recensione")
         ristoranti_esistenti = df["ristorante"].dropna().unique().tolist()
@@ -126,37 +171,66 @@ with tab_lista:
 
                         st.session_state["clear_form"] = True
                         st.rerun()
-                        
-    # ===== Modifica/Elimina recensioni utente =====
+            
+    # ===== Modifica/Elimina recensioni utente (con filtri) =====
     user_df = df[df["utente"] == st.session_state.username]
     st.write('#')
     if not user_df.empty:
-        st.subheader("📋 Le tue recensioni")
-        for idx, row in user_df.iterrows():
-            with st.expander(f"{row['ristorante']} – ⭐ {row['voto']}"):
-                nuovo_ristorante = st.text_input("🍴 Nome ristorante", value=row["ristorante"], key=f"res_{idx}")
-                nuova_recensione = st.text_area("📝 Recensione", value=row["recensione"], key=f"rev_{idx}")
-                nuovo_voto = st.slider("⭐ Voto", 1, 10, value=int(row["voto"]), key=f"voto_{idx}")
-                nuovo_link = row["link"]
-                lat, lon = row["lat"], row["lon"]
+        st.subheader("📋 Visualizza e modifica le tue recensioni")
 
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button("💾 Salva modifiche", key=f"mod_{idx}"):
-                        aggiorna_recensione(df, idx, {
-                            "ristorante": nuovo_ristorante,
-                            "recensione": nuova_recensione,
-                            "voto": nuovo_voto,
-                            "link": nuovo_link,
-                            "lat": lat,
-                            "lon": lon
-                        }, SPREADSHEET_NAME, WORKSHEET_NAME)
-                        st.success("Recensione modificata.")
-                        st.rerun()
-                with col2:
-                    if st.button("🗑️ Elimina", key=f"del_{idx}"):
-                        df = elimina_recensione(df, idx, SPREADSHEET_NAME, WORKSHEET_NAME)
-                        st.success("Recensione eliminata.")
+        col1, col2 = st.columns(2)
+
+        with col1:
+            filtro_mio_ristorante = st.text_input("Filtra per ristorante (testo)", key="filtro_mio_ristorante")
+        with col2:
+            mio_voto_minimo = st.slider("Voto minimo", 1, 10, 1, key="mio_voto_minimo")
+
+        # Applica i filtri
+        user_df_filtrato = user_df.copy()
+
+        if filtro_mio_ristorante.strip():
+            user_df_filtrato = user_df_filtrato[
+                user_df_filtrato["ristorante"].str.contains(filtro_mio_ristorante, case=False, na=False)
+            ]
+
+        user_df_filtrato = user_df_filtrato[user_df_filtrato["voto"] >= mio_voto_minimo]
+
+        # sort by most recents
+        user_df_filtrato=user_df_filtrato.sort_values('data',ascending=False)
+        
+        if (filtro_mio_ristorante=="") & (mio_voto_minimo==1):
+            user_df_filtrato=user_df_filtrato.iloc[:10,:]
+            st.info('Visualizzazione limitata alle 10 recensioni più recenti. Utilizzare i filtri per cercare le recensioni.')
+            
+        if user_df_filtrato.empty:
+            st.info("Non hai recensioni che corrispondono ai filtri.")
+        else:
+            for idx, row in user_df_filtrato.iterrows():
+                with st.expander(f"{row['ristorante']} – ⭐ {row['voto']}"):
+                    nuovo_ristorante = st.text_input("🍴 Nome ristorante", value=row["ristorante"], key=f"res_{idx}")
+                    nuova_recensione = st.text_area("📝 Recensione", value=row["recensione"], key=f"rev_{idx}")
+                    nuovo_voto = st.slider("⭐ Voto", 1, 10, value=int(row["voto"]), key=f"voto_{idx}")
+                    nuovo_link = row["link"]
+                    lat, lon = row["lat"], row["lon"]
+
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("💾 Salva modifiche", key=f"mod_{idx}"):
+                            aggiorna_recensione(df, idx, {
+                                "ristorante": nuovo_ristorante,
+                                "recensione": nuova_recensione,
+                                "voto": nuovo_voto,
+                                "link": nuovo_link,
+                                "lat": lat,
+                                "lon": lon
+                            }, SPREADSHEET_NAME, WORKSHEET_NAME)
+                            st.success("Recensione modificata.")
+                            st.rerun()
+                    with col2:
+                        if st.button("🗑️ Elimina", key=f"del_{idx}"):
+                            df = elimina_recensione(df, idx, SPREADSHEET_NAME, WORKSHEET_NAME)
+                            st.success("Recensione eliminata.")
+                            st.rerun()
 
 
 with tab_mappa:
