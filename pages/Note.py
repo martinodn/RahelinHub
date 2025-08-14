@@ -6,8 +6,7 @@ from utils.gspread_utils import (
     carica_gs,
     salva_gs,
     aggiorna_gs,
-    elimina_gs,
-    salva_nota
+    elimina_gs
 )
 from google.oauth2.service_account import Credentials
 
@@ -19,6 +18,19 @@ SCOPES = [
     'https://www.googleapis.com/auth/drive'
 ]
 
+# === SALVATAGGIO NUOVA NOTA ===
+def salva_nota():
+    if st.session_state["nuovo_titolo"] and st.session_state["nuovo_contenuto"]:
+        salva_gs({
+            "utente": st.session_state.username,
+            "titolo": st.session_state["nuovo_titolo"],
+            "contenuto": st.session_state["nuovo_contenuto"],
+            "data": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+        })
+        st.session_state["nota_salvata"] = True
+    else:
+        st.warning("Compila titolo e contenuto.")
+        
 # === AUTENTICAZIONE ===
 if not st.session_state.get("logged_in", False):
     st.error("Effettua il login dalla home.")
