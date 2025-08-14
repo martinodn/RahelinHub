@@ -4,7 +4,10 @@ from utils.gspread_utils import load_image,aggiorna_ultimo_login, carica_df_da_s
 from datetime import datetime, timedelta
 
 
-st.set_page_config(page_title="RaheLink", layout="wide")
+st.set_page_config( page_title="RaheLink",
+                    layout="wide",
+                    page_icon="favicon.ico")
+
 st.sidebar.title("🔐 Login")
 
 SPREADSHEET_NAME = "LoginDB"

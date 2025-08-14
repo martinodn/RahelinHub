@@ -13,7 +13,8 @@ from utils.gspread_utils import (
 )
 
 
-st.set_page_config(layout="wide")
+st.set_page_config( layout="wide",
+                    page_icon="favicon.ico")
 
 
 if not st.session_state.get("logged_in", False):
@@ -125,6 +126,37 @@ with tab_lista:
 
                         st.session_state["clear_form"] = True
                         st.rerun()
+                        
+    # ===== Modifica/Elimina recensioni utente =====
+    user_df = df[df["utente"] == st.session_state.username]
+    st.write('#')
+    if not user_df.empty:
+        st.subheader("📋 Le tue recensioni")
+        for idx, row in user_df.iterrows():
+            with st.expander(f"{row['ristorante']} – ⭐ {row['voto']}"):
+                nuovo_ristorante = st.text_input("🍴 Nome ristorante", value=row["ristorante"], key=f"res_{idx}")
+                nuova_recensione = st.text_area("📝 Recensione", value=row["recensione"], key=f"rev_{idx}")
+                nuovo_voto = st.slider("⭐ Voto", 1, 10, value=int(row["voto"]), key=f"voto_{idx}")
+                nuovo_link = row["link"]
+                lat, lon = row["lat"], row["lon"]
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("💾 Salva modifiche", key=f"mod_{idx}"):
+                        aggiorna_recensione(df, idx, {
+                            "ristorante": nuovo_ristorante,
+                            "recensione": nuova_recensione,
+                            "voto": nuovo_voto,
+                            "link": nuovo_link,
+                            "lat": lat,
+                            "lon": lon
+                        }, SPREADSHEET_NAME, WORKSHEET_NAME)
+                        st.success("Recensione modificata.")
+                        st.rerun()
+                with col2:
+                    if st.button("🗑️ Elimina", key=f"del_{idx}"):
+                        df = elimina_recensione(df, idx, SPREADSHEET_NAME, WORKSHEET_NAME)
+                        st.success("Recensione eliminata.")
 
 
 with tab_mappa:
@@ -174,33 +206,3 @@ with tab_mappa:
 
         st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
 
-# ===== Modifica/Elimina recensioni utente =====
-user_df = df[df["utente"] == st.session_state.username]
-st.write('#')
-if not user_df.empty:
-    st.subheader("🛠️ Le tue recensioni")
-    for idx, row in user_df.iterrows():
-        with st.expander(f"{row['ristorante']} – ⭐ {row['voto']}"):
-            nuovo_ristorante = st.text_input("🍴 Nome ristorante", value=row["ristorante"], key=f"res_{idx}")
-            nuova_recensione = st.text_area("📝 Recensione", value=row["recensione"], key=f"rev_{idx}")
-            nuovo_voto = st.slider("⭐ Voto", 1, 10, value=int(row["voto"]), key=f"voto_{idx}")
-            nuovo_link = row["link"]
-            lat, lon = row["lat"], row["lon"]
-
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("💾 Salva modifiche", key=f"mod_{idx}"):
-                    aggiorna_recensione(df, idx, {
-                        "ristorante": nuovo_ristorante,
-                        "recensione": nuova_recensione,
-                        "voto": nuovo_voto,
-                        "link": nuovo_link,
-                        "lat": lat,
-                        "lon": lon
-                    }, SPREADSHEET_NAME, WORKSHEET_NAME)
-                    st.success("Recensione modificata.")
-                    st.rerun()
-            with col2:
-                if st.button("🗑️ Elimina", key=f"del_{idx}"):
-                    df = elimina_recensione(df, idx, SPREADSHEET_NAME, WORKSHEET_NAME)
-                    st.success("Recensione eliminata.")
