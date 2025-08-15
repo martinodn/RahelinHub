@@ -2,6 +2,12 @@ import streamlit as st
 import pandas as pd
 from utils.gspread_utils import carica_calendario
 
+def carica_calendario(sheet_url, sheet_name):
+    sheet = client.open_by_url(sheet_url).worksheet(sheet_name)
+    data = sheet.get_all_records()
+    df = pd.DataFrame(data)
+    return df
+    
 st.set_page_config( page_title="Smart Working",
                     layout="wide",
                     page_icon="favicon.ico")
