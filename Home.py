@@ -1,8 +1,7 @@
 import streamlit as st
 from utils.utenti import login
-from utils.gspread_utils import load_image,aggiorna_ultimo_login, carica_df_da_sheet
+from utils.gspread_utils import load_image, carica_df_da_sheet #aggiorna_ultimo_login,
 from datetime import datetime, timedelta
-
 
 st.set_page_config( page_title="RaheLink",
                     layout="wide",
@@ -17,7 +16,7 @@ df_login = carica_df_da_sheet(SPREADSHEET_NAME, WORKSHEET_NAME)
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.username = ""
-    st.session_state.login_time = None
+    #st.session_state.login_time = None
 
 if not st.session_state.logged_in:
     username = st.sidebar.text_input("Username")
@@ -31,12 +30,12 @@ if not st.session_state.logged_in:
             if login(username, password):
                 st.session_state.logged_in = True
                 st.session_state.username = username
-                st.session_state.login_time = datetime.now()
+                #st.session_state.login_time = datetime.now()
                 
-                try:
-                    aggiorna_ultimo_login(username, spreadsheet_name="LoginDB", worksheet_name="login")
-                except Exception as e:
-                    st.warning("⚠️ Errore salvataggio login: " + str(e))
+                #try:
+                #    aggiorna_ultimo_login(username, spreadsheet_name="LoginDB", #worksheet_name="login")
+                #except Exception as e:
+                #    st.warning("⚠️ Errore salvataggio login: " + str(e))
                     
                 st.rerun()
             else:
@@ -46,7 +45,7 @@ else:
     if st.sidebar.button("Logout"):
         st.session_state.logged_in = False
         st.session_state.username = ""
-        st.session_state.login_time = None
+        #st.session_state.login_time = None
         st.rerun()
 
 st.title("Benvenuto su RaheLink! 🤗")

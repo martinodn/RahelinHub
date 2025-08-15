@@ -2,6 +2,10 @@ import streamlit as st
 import pandas as pd
 from utils.gspread_utils import carica_calendario
 
+st.set_page_config( page_title="Smart Working",
+                    layout="wide",
+                    page_icon="favicon.ico")
+                    
 st.title("📅 Calendario Smart Working – Marti & Vali ")
 
 SHEET_NAME="https://docs.google.com/spreadsheets/d/1DfXFpEZudFg3aXOXTr5pdWRfLAH0wCZd2vqZI9t4NPo/edit?gid=0#gid=0"
