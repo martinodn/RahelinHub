@@ -12,7 +12,11 @@ def carica_calendario(sheet_url, sheet_name, client):
 st.set_page_config( page_title="Smart Working",
                     layout="wide",
                     page_icon="favicon.ico")
-                    
+       
+if not st.session_state.get("logged_in", False):
+    st.error("Effettua il login dalla home.")
+    st.stop()
+    
 st.title("📅 Calendario Smart Working – Marti & Vali ")
 SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
