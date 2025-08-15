@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from utils.gspread_utils import carica_calendario
+#from utils.gspread_utils import carica_calendario
 
 def carica_calendario(sheet_url, sheet_name):
     sheet = client.open_by_url(sheet_url).worksheet(sheet_name)
