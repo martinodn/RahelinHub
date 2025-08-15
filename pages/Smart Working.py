@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 #from utils.gspread_utils import carica_calendario
 
-def carica_calendario(sheet_url, sheet_name):
+def carica_calendario(sheet_url, sheet_name, client):
     sheet = client.open_by_url(sheet_url).worksheet(sheet_name)
     data = sheet.get_all_records()
     df = pd.DataFrame(data)
@@ -13,12 +13,23 @@ st.set_page_config( page_title="Smart Working",
                     page_icon="favicon.ico")
                     
 st.title("📅 Calendario Smart Working – Marti & Vali ")
+SCOPES = [
+    'https://www.googleapis.com/auth/spreadsheets',
+    'https://www.googleapis.com/auth/drive'
+]
+
+creds_dict = dict(st.secrets["google_service_account"])
+
+# Crea oggetto credentials
+creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+
+client = gspread.authorize(creds)
 
 SHEET_NAME="https://docs.google.com/spreadsheets/d/1DfXFpEZudFg3aXOXTr5pdWRfLAH0wCZd2vqZI9t4NPo/edit?gid=0#gid=0"
 WORKSHEET_NAME = "smartworking"
 
 # Carica il foglio in formato long (una riga per persona+mese)
-df = carica_calendario(SHEET_NAME, WORKSHEET_NAME)
+df = carica_calendario(SHEET_NAME, WORKSHEET_NAME, client)
 
 
 # Opzioni disponibili (mesi unici)
