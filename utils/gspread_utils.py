@@ -146,4 +146,9 @@ def elimina_gs(indice: int):
     riga_sheets = indice + 2
     sheet.delete_rows(riga_sheets)
 
+def carica_calendario(sheet_url, sheet_name):
 
+    sheet = client.open_by_url(sheet_url).worksheet(sheet_name)
+    data = sheet.get_all_records()
+    df = pd.DataFrame(data)
+    return df
