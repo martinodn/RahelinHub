@@ -6,3 +6,4 @@ def hash_password(password):
 
 def login(username, password):
     return st.secrets['password'][username]==hash_password(password)
+
