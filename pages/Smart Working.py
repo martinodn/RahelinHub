@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 from google.oauth2.service_account import Credentials
 import gspread
-
+import io
+    
 def carica_calendario(sheet_url, sheet_name, client):
     sheet = client.open_by_url(sheet_url).worksheet(sheet_name)
     data = sheet.get_all_records()
@@ -58,15 +59,36 @@ else:
 
     # Ordina i giorni in modo numerico (da "01" a "31")
     tabella = tabella.reindex(sorted(tabella.index, key=lambda x: int(x)), axis=0)
+    
+    # Controllo per giorni in cui entrambi sono in "Ufficio" o "Trasferta"
+    if tabella.shape[1] == 2:  # Verifica che ci siano solo due persone (Marti & Vali)
+        persona1, persona2 = tabella.columns.tolist()
+
+        # Itera sui giorni
+        date_conflittuali = []
+        for giorno, row in tabella.iterrows():
+            val1 = row[persona1]
+            val2 = row[persona2]
+
+            if val1 in ["Ufficio", "Trasferta", "Offsite"] and val2 in ["Ufficio", "Trasferta","Offsite"]:
+                date_conflittuali.append(giorno)
+
+        if date_conflittuali:
+            giorni_str = ", ".join(sorted([str(int(x)) for x in date_conflittuali], key=lambda x: int(x)))
+            #st.write(date_conflittuali)
+            
+            st.info(f"⚠️ Attenzione! Entrambi fuori casa nei seguenti giorni: {giorni_str}")
+
 
     # Funzione di colorazione celle
     def colora_celle(val):
         colori = {
-            "Casa": "background-color: #d4edda; color: black",       # Verdino chiaro
-            "Ufficio": "background-color: #f8d7da; color: black",    # Rossino chiaro
-            "Ferie": "background-color: #ffeeba; color: black",      # Arancione
-            "Jolly": "background-color: #e2d6f3; color: black",      # Viola chiaro
-            "Trasferta": "background-color: #cce5ff; color: black",  # Azzurro
+            "Casa": "background-color: #d4edda; color: black",        # Verdino chiaro
+            "Ufficio": "background-color: #f8d7da; color: black",     # Rossino chiaro
+            "Ferie": "background-color: #ffeeba; color: black",       # Arancione standard
+            "Offsite": "background-color: #ffefd5; color: black",     # Arancione chiaro (PapayaWhip)
+            "Jolly": "background-color: #e2d6f3; color: black",       # Viola chiaro
+            "Trasferta": "background-color: #cce5ff; color: black",   # Azzurro
             "-": "background-color: #f1f1f1; color: black",
             "": "background-color: #f1f1f1; color: black"
         }
@@ -75,3 +97,18 @@ else:
     # Applica colori e visualizza
     styled_tab = tabella.style.applymap(colora_celle).set_properties(**{"text-align": "center"})
     st.dataframe(styled_tab, use_container_width=True, height=1150)
+
+    # ---- CREA FILE EXCEL ----
+    excel_buf = io.BytesIO()
+    with pd.ExcelWriter(excel_buf, engine='openpyxl') as writer:
+        tabella.to_excel(writer, sheet_name=f"Calendario_{mese_sel}", index=True)
+    excel_buf.seek(0)
+
+    # ---- BOTTONE DOWNLOAD ----
+    st.download_button(
+        label="📥 Scarica calendario in Excel",
+        data=excel_buf,
+        file_name=f"calendario_smartworking_{mese_sel}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
