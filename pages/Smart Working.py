@@ -18,7 +18,8 @@ if not st.session_state.get("logged_in", False):
     st.error("Effettua il login dalla home.")
     st.stop()
     
-st.title("📅 Calendario Smart Working – Marti & Vali ")
+st.title("📅 Smart Working – Marti & Vali ")
+
 SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
     'https://www.googleapis.com/auth/drive'
@@ -72,13 +73,32 @@ else:
 
             if val1 in ["Ufficio", "Trasferta", "Offsite"] and val2 in ["Ufficio", "Trasferta","Offsite"]:
                 date_conflittuali.append(giorno)
+        
+        sw_cols=st.columns(2)
+        with sw_cols[0]:
+            if date_conflittuali:
+                giorni_str = ", ".join(sorted([str(int(x)) for x in date_conflittuali], key=lambda x: int(x)))
+                #st.write(date_conflittuali)
+                
+                st.info(f"⚠️ Attenzione! Entrambi fuori casa nei seguenti giorni: {giorni_str}")
+                
+        with sw_cols[1]:
+            # ---- CREA FILE EXCEL ----
+            excel_buf = io.BytesIO()
+            with pd.ExcelWriter(excel_buf, engine='openpyxl') as writer:
+                tabella.to_excel(writer, sheet_name=f"Calendario_{mese_sel}", index=True)
+            excel_buf.seek(0)
 
-        if date_conflittuali:
-            giorni_str = ", ".join(sorted([str(int(x)) for x in date_conflittuali], key=lambda x: int(x)))
-            #st.write(date_conflittuali)
-            
-            st.info(f"⚠️ Attenzione! Entrambi fuori casa nei seguenti giorni: {giorni_str}")
+            # ---- BOTTONE DOWNLOAD ----
+            st.download_button(
+                label="📥 Scarica calendario in Excel",
+                data=excel_buf,
+                file_name=f"calendario_smartworking_{mese_sel}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
 
+
+    
 
     # Funzione di colorazione celle
     def colora_celle(val):
@@ -98,17 +118,4 @@ else:
     styled_tab = tabella.style.applymap(colora_celle).set_properties(**{"text-align": "center"})
     st.dataframe(styled_tab, use_container_width=True, height=1150)
 
-    # ---- CREA FILE EXCEL ----
-    excel_buf = io.BytesIO()
-    with pd.ExcelWriter(excel_buf, engine='openpyxl') as writer:
-        tabella.to_excel(writer, sheet_name=f"Calendario_{mese_sel}", index=True)
-    excel_buf.seek(0)
-
-    # ---- BOTTONE DOWNLOAD ----
-    st.download_button(
-        label="📥 Scarica calendario in Excel",
-        data=excel_buf,
-        file_name=f"calendario_smartworking_{mese_sel}.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-
+    

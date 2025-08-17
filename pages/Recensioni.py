@@ -44,7 +44,7 @@ with tab_lista:
         filtro_nome = st.text_input("🔍 Cerca ristorante per nome")
 
         # Calcolo media voti per ristorante
-        media_voti = df.groupby("ristorante")["voto"].mean().reset_index().rename(columns={"voto": "voto_medio"})
+        media_voti = df.groupby("ristorante").agg(voto_medio=("voto", "mean"), numero_voti=("voto", "count")).reset_index()
 
         # Applica filtro per nome se presente
         if filtro_nome:
@@ -58,9 +58,9 @@ with tab_lista:
         with ranking_cols[0]:
             # Ordina in base alla selezione
             if rank == "Flop 10":
-                media_voti = media_voti.sort_values("voto_medio", ascending=True)
+                media_voti = media_voti.sort_values(["voto_medio","numero_voti"], ascending=True)
             else:
-                media_voti = media_voti.sort_values("voto_medio", ascending=False)
+                media_voti = media_voti.sort_values(["voto_medio","numero_voti"], ascending=False)
 
             # Mostra solo i primi 10 risultati
             media_voti = media_voti.head(10)
